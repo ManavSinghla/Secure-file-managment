@@ -16,7 +16,7 @@ void encryptFile(const char *input, const char *output, const unsigned char *key
     fclose(out);
 }
 
-int main() {
+int main(){
     unsigned char key[16] = "securekey123456"; 
     encryptFile("example.txt", "encrypted.bin", key);
     return 0;
