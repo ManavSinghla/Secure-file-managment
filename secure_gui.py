@@ -2,23 +2,58 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 import os
 import random
+import json
 
 # Globals
 otp = None
 current_user = {}
+users_file = "users.json"
 
-# Dummy users
-users_db = {
-    "admin": {"password": "admin123", "role": "admin"},
-    "user": {"password": "user123", "role": "user"},
-}
+# ---------- User Database ----------
+def load_users():
+    if os.path.exists(users_file):
+        with open(users_file, "r") as f:
+            return json.load(f)
+    else:
+        return {}
 
-# GUI Setup
+def save_users(users):
+    with open(users_file, "w") as f:
+        json.dump(users, f, indent=4)
+
+users_db = load_users()
+
+# ---------- GUI Setup ----------
 root = tk.Tk()
 root.title("🔐 Secure File Manager")
-root.geometry("600x450")
+root.geometry("600x500")
 
-# ---------- Authentication ----------
+# ---------- Auth ----------
+def switch_to_signup():
+    login_frame.pack_forget()
+    signup_frame.pack()
+
+def switch_to_login():
+    signup_frame.pack_forget()
+    login_frame.pack()
+
+def signup():
+    username = signup_username.get().lower()
+    password = signup_password.get()
+    role = role_var.get()
+
+    if username in users_db:
+        messagebox.showerror("Signup Failed", "Username already exists!")
+        return
+
+    if not username or not password:
+        messagebox.showerror("Signup Failed", "All fields are required!")
+        return
+
+    users_db[username] = {"password": password, "role": role}
+    save_users(users_db)
+    messagebox.showinfo("Success", f"User '{username}' registered successfully!")
+    switch_to_login()
 
 def login():
     username = username_entry.get().lower()
@@ -34,7 +69,6 @@ def login():
     else:
         messagebox.showerror("Login Failed", "Invalid username or password.")
 
-# ---------- OTP ----------
 def generate_otp():
     global otp
     otp = random.randint(100000, 999999)
@@ -115,7 +149,24 @@ tk.Label(login_frame, text="Password:").pack()
 password_entry = tk.Entry(login_frame, show="*")
 password_entry.pack()
 tk.Button(login_frame, text="Login", command=login).pack(pady=10)
-login_frame.pack(pady=50)
+tk.Button(login_frame, text="No account? Sign up", command=switch_to_signup).pack()
+login_frame.pack(pady=30)
+
+# Signup Frame
+signup_frame = tk.Frame(root)
+tk.Label(signup_frame, text="📝 Signup", font=("Arial", 16)).pack(pady=10)
+tk.Label(signup_frame, text="Username:").pack()
+signup_username = tk.Entry(signup_frame)
+signup_username.pack()
+tk.Label(signup_frame, text="Password:").pack()
+signup_password = tk.Entry(signup_frame, show="*")
+signup_password.pack()
+tk.Label(signup_frame, text="Role:").pack()
+role_var = tk.StringVar(value="user")
+tk.Radiobutton(signup_frame, text="User", variable=role_var, value="user").pack()
+tk.Radiobutton(signup_frame, text="Admin", variable=role_var, value="admin").pack()
+tk.Button(signup_frame, text="Sign Up", command=signup).pack(pady=10)
+tk.Button(signup_frame, text="Back to Login", command=switch_to_login).pack()
 
 # OTP Frame
 otp_frame = tk.Frame(root)
@@ -139,5 +190,5 @@ tk.Button(btn_frame, text="Rename File", command=rename_file).grid(row=0, column
 tk.Button(btn_frame, text="Delete File", command=delete_file).grid(row=0, column=3, padx=5)
 tk.Button(btn_frame, text="Scan File", command=scan_file).grid(row=0, column=4, padx=5)
 
-# ---------- Start GUI ----------
+# Start GUI
 root.mainloop()
